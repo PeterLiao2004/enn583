@@ -16,6 +16,16 @@ pip install -e .
 The editable install provides the instructor-supplied `kitti_utils` module used
 by the practicals and assessment.
 
+Alternatively, if Pixi is installed, create and use the same environment with:
+
+```bash
+pixi install
+pixi shell
+```
+
+You can also run commands without activating a shell, for example
+`pixi run python assessment/check_student_solution.py --help`.
+
 ## Repository Layout
 
 ```text
