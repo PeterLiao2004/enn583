@@ -124,10 +124,14 @@ def match_features(img_i: np.ndarray, img_j: np.ndarray):
             values = cv.normalize(values, None, 0, 255, cv.NORM_MINMAX)
         return np.ascontiguousarray(np.clip(values, 0, 255).astype(np.uint8))
 
+    # Convert images to greyscale uint8 arrays for OpenCV feature detection and matching.
     gray_i, gray_j = as_gray_uint8(img_i), as_gray_uint8(img_j)
 
     # SIFT is robust to the modest scale and viewpoint changes between KITTI
     # frames. ORB keeps the function usable with OpenCV builds lacking SIFT.
+    
+    # Choose SIFT if available, otherwise fall back to ORB. The parameters below
+    # are tuned for the KITTI dataset.
     if hasattr(cv, "SIFT_create"):
         detector = cv.SIFT_create(nfeatures=5000, contrastThreshold=0.02,
                                   edgeThreshold=12)
@@ -138,42 +142,59 @@ def match_features(img_i: np.ndarray, img_j: np.ndarray):
         norm = cv.NORM_HAMMING
         ratio = 0.80
 
+    # Detect keypoints and compute descriptors for both images.
     keypoints_i, descriptors_i = detector.detectAndCompute(gray_i, None)
     keypoints_j, descriptors_j = detector.detectAndCompute(gray_j, None)
     matches = []
 
+    # Check that both images have enough keypoints to match. If either image has
+    # fewer than two keypoints, the matcher will fail. In that case, we return
+    # an empty match list, which is still a valid output.
     if (descriptors_i is not None and descriptors_j is not None
             and len(descriptors_i) >= 2 and len(descriptors_j) >= 2):
+        
+        # Create brute force matcher
         matcher = cv.BFMatcher(norm)
 
         def ratio_matches(first, second):
             accepted = {}
+            
+            # Find two nearest matches
             for neighbours in matcher.knnMatch(first, second, k=2):
                 if len(neighbours) == 2 and neighbours[0].distance < ratio * neighbours[1].distance:
                     accepted[neighbours[0].queryIdx] = neighbours[0]
             return accepted
 
-        forward = ratio_matches(descriptors_i, descriptors_j)
-        reverse = ratio_matches(descriptors_j, descriptors_i)
+        # Forward and reverse matching
+        forward = ratio_matches(descriptors_i, descriptors_j) # image i to image j
+        reverse = ratio_matches(descriptors_j, descriptors_i) # image j to image i
+        
         # Mutual matching removes many ambiguous correspondences on repeated
         # road markings, windows, vegetation, and image borders.
         matches = [m for query, m in forward.items()
                    if m.trainIdx in reverse and reverse[m.trainIdx].trainIdx == query]
+        
+        # Sort by distance so that the best matches are first.
         matches.sort(key=lambda m: m.distance)
 
         # Use epipolar geometry as a final outlier rejection step. If geometry
         # cannot be estimated, the descriptor-filtered matches remain useful.
+        
+        # need at least 8 matches to compute the fundamental matrix
         if len(matches) >= 8:
             points_i = np.float32([keypoints_i[m.queryIdx].pt for m in matches])
             points_j = np.float32([keypoints_j[m.trainIdx].pt for m in matches])
+            
+            # Estimate the fundamental matrix using RANSAC to filter out outliers.
             _, mask = cv.findFundamentalMat(
                 points_i, points_j, cv.FM_RANSAC, 1.5, 0.999, 5000
             )
+            # Keep only the inlier matches that are consistent with the estimated epipolar lines
             if mask is not None and mask.size == len(matches):
                 inliers = [m for m, keep in zip(matches, mask.ravel()) if keep]
                 if len(inliers) >= 8:
                     matches = inliers
-
+    # Write the matches to a CSV file in the required format.
     with open("results_matches.csv", "w", newline="", encoding="utf-8") as output:
         writer = csv.writer(output)
         writer.writerow(["match_id", "u_i", "v_i", "u_j", "v_j"])
