@@ -3,11 +3,8 @@ Loading KITTI data...
 Loaded sequence: 2011_09_26_drive_0035
 Number of frames: 131
 Example image frames: 0 and 1
-Selected checks: estimate_relative_pose
-Using these frame pairs for the selected pair-based check(s):
-    19->24, 90->95, 120->125
-Frame skip: 5
-Random seed: 123
+Selected checks: visual_odometry
+Random seed: 0
 Image 0 shape: (375, 1242, 3)
 Image 1 shape: (375, 1242, 3)
 
@@ -15,47 +12,29 @@ This checker does not assign marks.
 It shows whether your functions run and whether the CSV files look right.
 
 ================================================================================
-Checking estimate_relative_pose(dataset, frame_i, frame_j)
+Checking visual_odometry(dataset)
 ================================================================================
-ℹ️  INFO Checking 3 randomly selected frame pair(s).
-
-ℹ️  INFO Pair 1/3: 19 -> 24
-✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.999 seconds
-✅ PASS Found results_relative_pose.csv.
-✅ PASS results_relative_pose.csv has the expected header.
-✅ PASS results_relative_pose.csv contains one data row.
-✅ PASS Relative-pose row has numeric pose values.
-
-ℹ️  INFO Pair 2/3: 90 -> 95
-✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.676 seconds
-✅ PASS Found results_relative_pose.csv.
-✅ PASS results_relative_pose.csv has the expected header.
-✅ PASS results_relative_pose.csv contains one data row.
-✅ PASS Relative-pose row has numeric pose values.
-
-ℹ️  INFO Pair 3/3: 120 -> 125
-✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.870 seconds
-✅ PASS Found results_relative_pose.csv.
-✅ PASS results_relative_pose.csv has the expected header.
-✅ PASS results_relative_pose.csv contains one data row.
-✅ PASS Relative-pose row has numeric pose values.
-
-ℹ️  INFO Runtime summary for estimate_relative_pose():
-       Mean runtime: 0.848 seconds
-       Slowest pair: 0.999 seconds
-ℹ️  INFO Relative-pose comparison against KITTI ground truth:
-       Evaluated frame pairs: 3
-       Translation RMSE: 0.055540 m
-       Rotation RMSE: 0.000337 rad (0.019 deg)
-       Translation error: 3.64% of actual motion over 3 moving pair(s)
-       Rotation error: 1.94% of actual rotation over 3 rotating pair(s)
+✅ PASS visual_odometry() ran without errors.
+ℹ️  INFO Runtime: 103.469 seconds
+✅ PASS Found results_visual_odometry.csv.
+✅ PASS results_visual_odometry.csv has the expected header.
+✅ PASS results_visual_odometry.csv contains 131 pose row(s).
+✅ PASS Trajectory rows have sequential frame IDs and numeric poses.
+ℹ️  INFO Wrote trajectory comparison plot to results_visual_odometry_comparison.png.
+ℹ️  INFO Trajectory comparison against KITTI ground truth:
+       Evaluated frames: 131
+       Translation RMSE: 0.754737 m
+       Rotation RMSE: 0.005168 rad (0.296 deg)
+ℹ️  INFO Average frame-to-frame relative pose error:
+       Evaluated frame pairs: 130
+       Translation RMSE: 0.016534 m
+       Rotation RMSE: 0.000582 rad (0.033 deg)
+       Translation error: 5.76% of actual frame-to-frame motion over 130 moving pair(s)
+       Rotation error: 10.03% of actual frame-to-frame rotation over 121 rotating pair(s)
 
 ================================================================================
 Summary
 ================================================================================
-estimate_relative_pose(): PASS
+visual_odometry(): PASS
 
 Report written to: /home/peterliao/src/enn583/check_student_solution_report.txt

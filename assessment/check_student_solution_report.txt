@@ -21,7 +21,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 1/10: 3 -> 4
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.584 seconds
+ℹ️  INFO Runtime: 0.675 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1793 match row(s).
@@ -35,7 +35,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 2/10: 22 -> 23
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.434 seconds
+ℹ️  INFO Runtime: 0.479 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1588 match row(s).
@@ -49,7 +49,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 3/10: 23 -> 24
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.344 seconds
+ℹ️  INFO Runtime: 0.330 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1611 match row(s).
@@ -63,7 +63,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 4/10: 48 -> 49
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.386 seconds
+ℹ️  INFO Runtime: 0.396 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1507 match row(s).
@@ -77,7 +77,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 5/10: 72 -> 73
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.240 seconds
+ℹ️  INFO Runtime: 0.288 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1556 match row(s).
@@ -91,7 +91,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 6/10: 80 -> 81
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.213 seconds
+ℹ️  INFO Runtime: 0.206 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1697 match row(s).
@@ -105,7 +105,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 7/10: 85 -> 86
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.235 seconds
+ℹ️  INFO Runtime: 0.222 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1834 match row(s).
@@ -119,7 +119,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 8/10: 95 -> 96
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.254 seconds
+ℹ️  INFO Runtime: 0.261 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1931 match row(s).
@@ -133,7 +133,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 9/10: 113 -> 114
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.440 seconds
+ℹ️  INFO Runtime: 0.258 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1673 match row(s).
@@ -147,7 +147,7 @@ Checking match_features(img_i, img_j)
 
 ℹ️  INFO Pair 10/10: 115 -> 116
 ✅ PASS match_features() ran without errors.
-ℹ️  INFO Runtime: 0.411 seconds
+ℹ️  INFO Runtime: 0.286 seconds
 ✅ PASS Found results_matches.csv.
 ✅ PASS results_matches.csv has the expected header.
 ✅ PASS results_matches.csv contains 1680 match row(s).
@@ -160,8 +160,8 @@ Checking match_features(img_i, img_j)
        Matches below 5 px: 100.0%
 
 ℹ️  INFO Runtime summary for match_features():
-       Mean runtime: 0.354 seconds
-       Slowest pair: 0.584 seconds
+       Mean runtime: 0.340 seconds
+       Slowest pair: 0.675 seconds
 ℹ️  INFO Overall feature-match geometry summary:
        Evaluated frame pairs: 10
        Evaluated matches: 16870
@@ -178,7 +178,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 1/10: 3 -> 4
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.857 seconds
+ℹ️  INFO Runtime: 0.772 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -186,7 +186,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 2/10: 22 -> 23
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.761 seconds
+ℹ️  INFO Runtime: 0.651 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -194,7 +194,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 3/10: 23 -> 24
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.732 seconds
+ℹ️  INFO Runtime: 0.666 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -202,7 +202,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 4/10: 48 -> 49
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.888 seconds
+ℹ️  INFO Runtime: 0.834 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -210,7 +210,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 5/10: 72 -> 73
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.547 seconds
+ℹ️  INFO Runtime: 0.500 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -218,7 +218,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 6/10: 80 -> 81
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.527 seconds
+ℹ️  INFO Runtime: 0.528 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -226,7 +226,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 7/10: 85 -> 86
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.558 seconds
+ℹ️  INFO Runtime: 0.476 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -234,7 +234,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 8/10: 95 -> 96
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.617 seconds
+ℹ️  INFO Runtime: 0.585 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -242,7 +242,7 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 9/10: 113 -> 114
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.781 seconds
+ℹ️  INFO Runtime: 0.647 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
@@ -250,15 +250,15 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 
 ℹ️  INFO Pair 10/10: 115 -> 116
 ✅ PASS estimate_relative_pose() ran without errors.
-ℹ️  INFO Runtime: 0.840 seconds
+ℹ️  INFO Runtime: 0.698 seconds
 ✅ PASS Found results_relative_pose.csv.
 ✅ PASS results_relative_pose.csv has the expected header.
 ✅ PASS results_relative_pose.csv contains one data row.
 ✅ PASS Relative-pose row has numeric pose values.
 
 ℹ️  INFO Runtime summary for estimate_relative_pose():
-       Mean runtime: 0.711 seconds
-       Slowest pair: 0.888 seconds
+       Mean runtime: 0.636 seconds
+       Slowest pair: 0.834 seconds
 ℹ️  INFO Relative-pose comparison against KITTI ground truth:
        Evaluated frame pairs: 10
        Translation RMSE: 0.015617 m
@@ -270,14 +270,28 @@ Checking estimate_relative_pose(dataset, frame_i, frame_j)
 Checking visual_odometry(dataset)
 ================================================================================
 ✅ PASS visual_odometry() ran without errors.
-ℹ️  INFO Runtime: 0.000 seconds
-❌ FAIL visual_odometry() must create results_visual_odometry.csv.
+ℹ️  INFO Runtime: 89.577 seconds
+✅ PASS Found results_visual_odometry.csv.
+✅ PASS results_visual_odometry.csv has the expected header.
+✅ PASS results_visual_odometry.csv contains 131 pose row(s).
+✅ PASS Trajectory rows have sequential frame IDs and numeric poses.
+ℹ️  INFO Wrote trajectory comparison plot to results_visual_odometry_comparison.png.
+ℹ️  INFO Trajectory comparison against KITTI ground truth:
+       Evaluated frames: 131
+       Translation RMSE: 0.754737 m
+       Rotation RMSE: 0.005168 rad (0.296 deg)
+ℹ️  INFO Average frame-to-frame relative pose error:
+       Evaluated frame pairs: 130
+       Translation RMSE: 0.016534 m
+       Rotation RMSE: 0.000582 rad (0.033 deg)
+       Translation error: 5.76% of actual frame-to-frame motion over 130 moving pair(s)
+       Rotation error: 10.03% of actual frame-to-frame rotation over 121 rotating pair(s)
 
 ================================================================================
 Summary
 ================================================================================
 match_features(): PASS
 estimate_relative_pose(): PASS
-visual_odometry(): FAIL
+visual_odometry(): PASS
 
 Report written to: /home/peterliao/src/enn583/assessment/check_student_solution_report.txt

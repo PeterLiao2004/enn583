@@ -468,15 +468,28 @@ def visual_odometry(dataset):
 
     """
 
-    # ====================================================================================
-    # Implement full visual odometry here.
-    #
-    # Suggested steps:
-    #   1. Start with the identity pose for frame 0.
-    #   2. Estimate relative poses between successive frames.
-    #   3. Chain the relative poses to build the full trajectory.
-    #   4. Write results_visual_odometry.csv with columns:
-    #      frame,x,y,z,roll,pitch,yaw
-    # ====================================================================================
+    frame_count = len(dataset)
+    if frame_count < 1:
+        raise ValueError("The dataset must contain at least one frame")
+
+    # T_0_k is the physical pose of camera k expressed in camera 0. If
+    # T_k_(k+1) is expressed in camera k, ordinary SE(3) composition gives the
+    # next trajectory pose: T_0_(k+1) = T_0_k @ T_k_(k+1).
+    poses = [sm.SE3()]
+    for frame in range(1, frame_count):
+        relative_pose = _relative_pose_from_stereo(dataset, frame - 1, frame)
+        poses.append(poses[-1] @ relative_pose)
+
+    with open("results_visual_odometry.csv", "w", newline="",
+              encoding="utf-8") as output:
+        writer = csv.writer(output)
+        writer.writerow(["frame", "x", "y", "z", "roll", "pitch", "yaw"])
+        for frame, pose in enumerate(poses):
+            roll, pitch, yaw = pose.rpy(order="zyx", unit="rad")
+            writer.writerow([
+                frame,
+                *[float(value) for value in pose.t],
+                float(roll), float(pitch), float(yaw),
+            ])
 
     return None
