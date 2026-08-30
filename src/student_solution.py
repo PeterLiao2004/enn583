@@ -42,6 +42,145 @@ import cv2 as cv
 # You can and should reuse the functions, i.e. call match_features from estimate_relative_pose, and call estimate_relative_pose from visual_odometry.
 
 
+def _gray_uint8(image: np.ndarray) -> np.ndarray:
+    """Convert a KITTI image to the format expected by OpenCV features."""
+    image = np.asarray(image)
+    if image.ndim == 3:
+        if image.shape[2] == 1:
+            image = image[..., 0]
+        elif image.shape[2] == 3:
+            image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+        elif image.shape[2] == 4:
+            image = cv.cvtColor(image, cv.COLOR_RGBA2GRAY)
+        else:
+            raise ValueError("Images must have 1, 3, or 4 channels")
+    elif image.ndim != 2:
+        raise ValueError("Images must be grayscale or colour arrays")
+
+    if image.dtype != np.uint8:
+        values = np.nan_to_num(image.astype(np.float32), copy=False)
+        if values.size and 0.0 <= values.min() and values.max() <= 1.0:
+            values *= 255.0
+        image = np.clip(values, 0, 255).astype(np.uint8)
+    return np.ascontiguousarray(image)
+
+
+def _mutual_ratio_matches(descriptors_a, descriptors_b, norm, ratio):
+    """Return unambiguous descriptor matches indexed by the first image."""
+    if (descriptors_a is None or descriptors_b is None
+            or len(descriptors_a) < 2 or len(descriptors_b) < 2):
+        return {}
+
+    matcher = cv.BFMatcher(norm)
+
+    def one_way(a, b):
+        result = {}
+        for neighbours in matcher.knnMatch(a, b, k=2):
+            if (len(neighbours) == 2
+                    and neighbours[0].distance < ratio * neighbours[1].distance):
+                result[neighbours[0].queryIdx] = neighbours[0]
+        return result
+
+    forward = one_way(descriptors_a, descriptors_b)
+    reverse = one_way(descriptors_b, descriptors_a)
+    return {
+        query: match for query, match in forward.items()
+        if match.trainIdx in reverse
+        and reverse[match.trainIdx].trainIdx == query
+    }
+
+
+def _relative_pose_from_stereo(dataset, frame_i: int, frame_j: int) -> sm.SE3:
+    """Estimate T_i_j (the physical pose of camera j expressed in camera i)."""
+    left_i, right_i = dataset.stereo(frame_i)
+    left_j, _ = dataset.stereo(frame_j)
+    images = [_gray_uint8(image) for image in (left_i, right_i, left_j)]
+
+    if hasattr(cv, "SIFT_create"):
+        detector = cv.SIFT_create(
+            nfeatures=7000, contrastThreshold=0.015, edgeThreshold=12
+        )
+        norm, ratio = cv.NORM_L2, 0.78
+    else:
+        detector = cv.ORB_create(nfeatures=7000, fastThreshold=8)
+        norm, ratio = cv.NORM_HAMMING, 0.82
+
+    features = [detector.detectAndCompute(image, None) for image in images]
+    (key_left_i, desc_left_i), (key_right_i, desc_right_i), \
+        (key_left_j, desc_left_j) = features
+
+    stereo = _mutual_ratio_matches(desc_left_i, desc_right_i, norm, ratio)
+    temporal = _mutual_ratio_matches(desc_left_i, desc_left_j, norm, ratio)
+
+    calibration_left = dataset.camera_calibration(camera=2)
+    calibration_right = dataset.camera_calibration(camera=3)
+    P_left = np.asarray(calibration_left["P"], dtype=np.float64)
+    P_right = np.asarray(calibration_right["P"], dtype=np.float64)
+    K = P_left[:, :3].copy()
+
+    # A rectified projection matrix encodes its x camera centre as -P[0,3]/fx.
+    centre_left = -P_left[0, 3] / P_left[0, 0]
+    centre_right = -P_right[0, 3] / P_right[0, 0]
+    baseline = float(centre_right - centre_left)
+    if not np.isfinite(baseline) or abs(baseline) < 1e-6:
+        raise ValueError("The stereo calibration does not contain a valid baseline")
+
+    object_points = []
+    image_points = []
+    fx, fy = K[0, 0], K[1, 1]
+    cx, cy = K[0, 2], K[1, 2]
+    for query in stereo.keys() & temporal.keys():
+        u_left, v_left = key_left_i[query].pt
+        u_right, v_right = key_right_i[stereo[query].trainIdx].pt
+        u_j, v_j = key_left_j[temporal[query].trainIdx].pt
+        disparity = u_left - u_right
+
+        # Reject matches inconsistent with rectified stereo geometry.
+        if abs(v_left - v_right) > 2.0 or disparity * baseline <= 0.5 * abs(baseline):
+            continue
+        depth = fx * baseline / disparity
+        if not np.isfinite(depth) or depth <= 1.0 or depth > 120.0:
+            continue
+        object_points.append([
+            (u_left - cx) * depth / fx,
+            (v_left - cy) * depth / fy,
+            depth,
+        ])
+        image_points.append([u_j, v_j])
+
+    if len(object_points) < 6:
+        raise RuntimeError(
+            f"Only {len(object_points)} valid stereo-temporal matches were found"
+        )
+
+    object_points = np.asarray(object_points, dtype=np.float64)
+    image_points = np.asarray(image_points, dtype=np.float64)
+    success, rotation_vector, translation, inliers = cv.solvePnPRansac(
+        object_points, image_points, K, None,
+        iterationsCount=3000, reprojectionError=2.5, confidence=0.999,
+        flags=cv.SOLVEPNP_EPNP,
+    )
+    if not success or inliers is None or len(inliers) < 6:
+        raise RuntimeError("PnP could not estimate a reliable relative pose")
+
+    inlier_ids = inliers.ravel()
+    success, rotation_vector, translation = cv.solvePnP(
+        object_points[inlier_ids], image_points[inlier_ids], K, None,
+        rotation_vector, translation, True, flags=cv.SOLVEPNP_ITERATIVE,
+    )
+    if not success:
+        raise RuntimeError("PnP pose refinement failed")
+
+    rotation_i_to_j_coordinates, _ = cv.Rodrigues(rotation_vector)
+    coordinate_transform = np.eye(4)
+    coordinate_transform[:3, :3] = rotation_i_to_j_coordinates
+    coordinate_transform[:3, 3] = translation.ravel()
+
+    # solvePnP maps fixed-point coordinates from camera i to camera j. The
+    # requested physical pose of camera j in camera i is its inverse.
+    return sm.SE3(coordinate_transform, check=False).inv()
+
+
 
 #  ====================================================================================
 #  ====================================================================================
@@ -265,16 +404,23 @@ def estimate_relative_pose(dataset, frame_i: int, frame_j: int):
        
     """
 
-    # ====================================================================================
-    # Implement frame-to-frame motion estimation here.
-    #
-    # Suggested steps:
-    #   1. Load the left images for frame_i and frame_j using dataset.stereo(...).
-    #   2. Find feature matches between the two frames.
-    #   3. Use calibration/depth/geometry to estimate the relative pose.
-    #   4. Write results_relative_pose.csv with columns:
-    #      frame_i,frame_j,x,y,z,roll,pitch,yaw
-    # ====================================================================================
+    frame_i, frame_j = int(frame_i), int(frame_j)
+    frame_count = len(dataset)
+    if not (0 <= frame_i < frame_count and 0 <= frame_j < frame_count):
+        raise IndexError("frame_i and frame_j must be valid dataset frame indices")
+
+    pose = _relative_pose_from_stereo(dataset, frame_i, frame_j)
+    roll, pitch, yaw = pose.rpy(order="zyx", unit="rad")
+
+    with open("results_relative_pose.csv", "w", newline="", encoding="utf-8") as output:
+        writer = csv.writer(output)
+        writer.writerow(["frame_i", "frame_j", "x", "y", "z",
+                         "roll", "pitch", "yaw"])
+        writer.writerow([
+            frame_i, frame_j,
+            *[float(value) for value in pose.t],
+            float(roll), float(pitch), float(yaw),
+        ])
 
     return None
 
