@@ -41,22 +41,23 @@ import cv2 as cv
 # Start with the match_features function, then implement estimate_relative_pose, and finally implement visual_odometry.
 # You can and should reuse the functions, i.e. call match_features from estimate_relative_pose, and call estimate_relative_pose from visual_odometry.
 
-
+# Converts image to expected format for OpenCV
 def _gray_uint8(image: np.ndarray) -> np.ndarray:
     """Convert a KITTI image to the format expected by OpenCV features."""
     image = np.asarray(image)
     if image.ndim == 3:
-        if image.shape[2] == 1:
+        if image.shape[2] == 1: # Already grayscale, just remove the channel dimension
             image = image[..., 0]
-        elif image.shape[2] == 3:
+        elif image.shape[2] == 3: # Convert RGB to grayscale
             image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-        elif image.shape[2] == 4:
+        elif image.shape[2] == 4: # Convert RGBA to grayscale
             image = cv.cvtColor(image, cv.COLOR_RGBA2GRAY)
         else:
             raise ValueError("Images must have 1, 3, or 4 channels")
     elif image.ndim != 2:
         raise ValueError("Images must be grayscale or colour arrays")
 
+    # Convert to uint8 if necessary, scaling values in [0, 1] to [0, 255].
     if image.dtype != np.uint8:
         values = np.nan_to_num(image.astype(np.float32), copy=False)
         if values.size and 0.0 <= values.min() and values.max() <= 1.0:
@@ -64,23 +65,25 @@ def _gray_uint8(image: np.ndarray) -> np.ndarray:
         image = np.clip(values, 0, 255).astype(np.uint8)
     return np.ascontiguousarray(image)
 
-
+# Uses both Ratio test and Mutual test to find unambiguous matches between two sets of descriptors
 def _mutual_ratio_matches(descriptors_a, descriptors_b, norm, ratio):
     """Return unambiguous descriptor matches indexed by the first image."""
     if (descriptors_a is None or descriptors_b is None
             or len(descriptors_a) < 2 or len(descriptors_b) < 2):
         return {}
 
-    matcher = cv.BFMatcher(norm)
+    matcher = cv.BFMatcher(norm) # Matcher for brute-force matching of descriptors
 
+    # Find the best matches from a to b and from b to a, applying the ratio test
     def one_way(a, b):
         result = {}
         for neighbours in matcher.knnMatch(a, b, k=2):
             if (len(neighbours) == 2
-                    and neighbours[0].distance < ratio * neighbours[1].distance):
+                    and neighbours[0].distance < ratio * neighbours[1].distance): # Finds the two nearest matches and applies the ratio test
                 result[neighbours[0].queryIdx] = neighbours[0]
         return result
-
+    
+    # Make sure that the matches are mutual, i.e. the best match from a to b is also the best match from b to a
     forward = one_way(descriptors_a, descriptors_b)
     reverse = one_way(descriptors_b, descriptors_a)
     return {
@@ -89,13 +92,14 @@ def _mutual_ratio_matches(descriptors_a, descriptors_b, norm, ratio):
         and reverse[match.trainIdx].trainIdx == query
     }
 
-
+# Calculate how the camera moved from frame_i to frame_j using stereo images and PnP
 def _relative_pose_from_stereo(dataset, frame_i: int, frame_j: int) -> sm.SE3:
     """Estimate T_i_j (the physical pose of camera j expressed in camera i)."""
-    left_i, right_i = dataset.stereo(frame_i)
-    left_j, _ = dataset.stereo(frame_j)
+    left_i, right_i = dataset.stereo(frame_i) # Left and right images from frame_i
+    left_j, _ = dataset.stereo(frame_j) # Left image from frame_j (right image is not needed for this calculation)
     images = [_gray_uint8(image) for image in (left_i, right_i, left_j)]
 
+    # Use SIFT if available, otherwise fall back to ORB. The parameters below are tuned for the KITTI dataset.
     if hasattr(cv, "SIFT_create"):
         detector = cv.SIFT_create(
             nfeatures=7000, contrastThreshold=0.015, edgeThreshold=12
@@ -105,19 +109,22 @@ def _relative_pose_from_stereo(dataset, frame_i: int, frame_j: int) -> sm.SE3:
         detector = cv.ORB_create(nfeatures=7000, fastThreshold=8)
         norm, ratio = cv.NORM_HAMMING, 0.82
 
+    # Get keypoints and descriptors for the left and right images of frame_i and the left image of frame_j
     features = [detector.detectAndCompute(image, None) for image in images]
     (key_left_i, desc_left_i), (key_right_i, desc_right_i), \
         (key_left_j, desc_left_j) = features
 
-    stereo = _mutual_ratio_matches(desc_left_i, desc_right_i, norm, ratio)
-    temporal = _mutual_ratio_matches(desc_left_i, desc_left_j, norm, ratio)
+    stereo = _mutual_ratio_matches(desc_left_i, desc_right_i, norm, ratio) # Find matches between left and right images of frame_i (stereo matches)
+    temporal = _mutual_ratio_matches(desc_left_i, desc_left_j, norm, ratio) # Find matches between left image of frame_i and left image of frame_j (temporal matches)
 
+    # Read camera calibration
     calibration_left = dataset.camera_calibration(camera=2)
     calibration_right = dataset.camera_calibration(camera=3)
     P_left = np.asarray(calibration_left["P"], dtype=np.float64)
     P_right = np.asarray(calibration_right["P"], dtype=np.float64)
-    K = P_left[:, :3].copy()
+    K = P_left[:, :3].copy() # Intrinsic matrix of the left camera
 
+    # Get baseline (distance between left and right cameras) from stereo calibration
     # A rectified projection matrix encodes its x camera centre as -P[0,3]/fx.
     centre_left = -P_left[0, 3] / P_left[0, 0]
     centre_right = -P_right[0, 3] / P_right[0, 0]
@@ -129,6 +136,9 @@ def _relative_pose_from_stereo(dataset, frame_i: int, frame_j: int) -> sm.SE3:
     image_points = []
     fx, fy = K[0, 0], K[1, 1]
     cx, cy = K[0, 2], K[1, 2]
+    
+    # Calculate disparity and depth for each matched point pair, and filter out invalid matches
+    # Depth = focal_length * baseline / disparity
     for query in stereo.keys() & temporal.keys():
         u_left, v_left = key_left_i[query].pt
         u_right, v_right = key_right_i[stereo[query].trainIdx].pt
@@ -155,14 +165,19 @@ def _relative_pose_from_stereo(dataset, frame_i: int, frame_j: int) -> sm.SE3:
 
     object_points = np.asarray(object_points, dtype=np.float64)
     image_points = np.asarray(image_points, dtype=np.float64)
+    
+    # Use RANSAC to robustly estimate the relative pose using PnP, filtering out outliers
+    # Known 3D points + where they are in the new image -> camera pose
     success, rotation_vector, translation, inliers = cv.solvePnPRansac(
         object_points, image_points, K, None,
         iterationsCount=3000, reprojectionError=2.5, confidence=0.999,
         flags=cv.SOLVEPNP_EPNP,
     )
+    
     if not success or inliers is None or len(inliers) < 6:
         raise RuntimeError("PnP could not estimate a reliable relative pose")
 
+    # Refine the pose estimate using all inliers
     inlier_ids = inliers.ravel()
     success, rotation_vector, translation = cv.solvePnP(
         object_points[inlier_ids], image_points[inlier_ids], K, None,
@@ -171,6 +186,7 @@ def _relative_pose_from_stereo(dataset, frame_i: int, frame_j: int) -> sm.SE3:
     if not success:
         raise RuntimeError("PnP pose refinement failed")
 
+    # Convert the rotation vector to a rotation matrix and construct the SE(3) transformation
     rotation_i_to_j_coordinates, _ = cv.Rodrigues(rotation_vector)
     coordinate_transform = np.eye(4)
     coordinate_transform[:3, :3] = rotation_i_to_j_coordinates
@@ -409,9 +425,11 @@ def estimate_relative_pose(dataset, frame_i: int, frame_j: int):
     if not (0 <= frame_i < frame_count and 0 <= frame_j < frame_count):
         raise IndexError("frame_i and frame_j must be valid dataset frame indices")
 
+    # Get the relative pose from frame_i to frame_j using stereo images and PnP
     pose = _relative_pose_from_stereo(dataset, frame_i, frame_j)
-    roll, pitch, yaw = pose.rpy(order="zyx", unit="rad")
+    roll, pitch, yaw = pose.rpy(order="zyx", unit="rad") # Convert the rotation matrix to roll, pitch, yaw angles in radians
 
+    # Save the relative pose to a CSV file in the required format.
     with open("results_relative_pose.csv", "w", newline="", encoding="utf-8") as output:
         writer = csv.writer(output)
         writer.writerow(["frame_i", "frame_j", "x", "y", "z",
@@ -467,7 +485,7 @@ def visual_odometry(dataset):
     ```
 
     """
-
+    # Ensoure dataset has at least one frame
     frame_count = len(dataset)
     if frame_count < 1:
         raise ValueError("The dataset must contain at least one frame")
@@ -477,6 +495,7 @@ def visual_odometry(dataset):
     # next trajectory pose: T_0_(k+1) = T_0_k @ T_k_(k+1).
     poses = [sm.SE3()]
     for frame in range(1, frame_count):
+        # Estimate relative pose 
         relative_pose = _relative_pose_from_stereo(dataset, frame - 1, frame)
         poses.append(poses[-1] @ relative_pose)
 
